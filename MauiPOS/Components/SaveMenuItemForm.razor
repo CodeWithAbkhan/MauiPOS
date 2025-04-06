@@ -1,0 +1,117 @@
+@using MauiPOS.Models
+@using MauiPOS.Repositories
+@inject MenuItemsRepository MenuItemsRepo
+@inject IJSRuntime JSRuntime
+
+<div class="p-4 overflow-y-auto max-h-screen">
+    <EditForm Model="Item" OnValidSubmit="HandleValidSubmit" FormName="EditItemsForm" class="space-y-4">
+        <DataAnnotationsValidator />
+        <ValidationSummary />
+
+        <!-- Name -->
+        <div class="space-y-1">
+            <label class="text-black text-base">Name</label>
+            <InputText @bind-Value="Item.Name" placeholder="Enter name" class="w-full bg-wheat text-black p-2 rounded" />
+            <ValidationMessage For="() => Item.Name" />
+        </div>
+
+        <!-- Image/Icon -->
+        <div class="space-y-1">
+            <label class="text-black text-base">Image/Icon</label>
+            <div class="bg-wheat h-24 w-24 mx-auto flex items-center justify-center rounded">
+                <img src="@(Item.Icon ?? DefaultIcon)" alt="Icon" class="@(Item.Icon == DefaultIcon ? "h-9 w-9" : "h-24 w-auto")" />
+            </div>
+            <button type="button" @onclick="PickImage" class="mt-2 bg-blue-600 text-white px-4 py-1 rounded mx-auto block">Pick Image</button>
+            <ValidationMessage For="() => Item.Icon" />
+        </div>
+
+        <!-- Description -->
+        <div class="space-y-1">
+            <label class="text-black text-base">Description</label>
+            <InputTextArea @bind-Value="Item.Description" placeholder="Enter description" class="w-full bg-wheat text-black p-2 rounded h-24" />
+            <ValidationMessage For="() => Item.Description" />
+        </div>
+
+        <!-- Price -->
+        <div class="space-y-1">
+            <label class="text-black text-base">Price</label>
+            <InputNumber @bind-Value="Item.Price" placeholder="Enter price" class="w-full bg-wheat text-black p-2 rounded" />
+            <ValidationMessage For="() => Item.Price" />
+        </div>
+
+        <!-- Categories -->
+        <div class="space-y-1">
+            <label class="text-black text-base">Categories</label>
+            <div class="grid grid-cols-3 gap-1">
+                @foreach (var category in Item.Categories)
+                {
+                    <div @onclick="() => ToggleCategorySelection(category)"
+                         class="@(category.IsSelected ? "bg-maroon text-white" : "bg-wheat text-black")
+                                h-10 flex items-center justify-center rounded-lg cursor-pointer">
+                        @category.Name
+                    </div>
+                }
+            </div>
+        </div>
+
+
+        <!-- Buttons -->
+        <div class="grid grid-cols-2 gap-2">
+            <button type="button" @onclick="Cancel" class="bg-red-600 text-white p-2 rounded">Cancel</button>
+            <button type="submit" class="bg-olive-800 text-white p-2 rounded">Save</button>
+        </div>
+    </EditForm>
+</div>
+
+@code {
+    private const string DefaultIcon = "image_add_regular_36.png";
+
+    [Parameter]
+    public MenuItemModel ModelItem { get; set; } = new MenuItemModel();
+    [SupplyParameterFromForm]
+    public MenuItemModel Item { get; set; } = new MenuItemModel();
+
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
+
+    [Parameter]
+    public EventCallback<MenuItemModel> OnSaveItem { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (ModelItem.Id > 0 && !string.IsNullOrEmpty(ModelItem.Icon))
+        {
+            ExistingIcon = ModelItem.Icon;
+            Item = ModelItem;
+        }
+        else
+        {
+            ModelItem.Icon = DefaultIcon;
+        }
+    }
+
+    private string? ExistingIcon { get; set; }
+
+    private void ToggleCategorySelection(MenuCategoryModel category)
+    {
+        category.IsSelected = !category.IsSelected;
+    }
+
+    private async Task PickImage()
+    {
+        // Temporary workaround
+        Item.Icon = "/images/burger.png"; // Replace with actual image path
+        StateHasChanged();
+    }
+
+    private async Task Cancel()
+    {
+        await OnCancel.InvokeAsync();
+    }
+
+    private async Task HandleValidSubmit()
+    {
+        await JSRuntime.InvokeVoidAsync("console.log", "Saving item:", Item);
+        await OnSaveItem.InvokeAsync(Item);
+    }
+}

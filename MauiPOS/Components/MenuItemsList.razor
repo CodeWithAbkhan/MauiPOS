@@ -1,0 +1,50 @@
+@using MauiPOS.Data
+@using MauiPOS.Repositories
+@inject HomeRepository HomeRepo
+
+<div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 p-2">
+    @foreach (var item in Items)
+    {
+        <div @onclick="() => SelectItem(item)"
+             class="bg-white border-2 border-indigo-200 rounded-xl overflow-hidden cursor-pointer hover:border-indigo-500 transition-colors">
+            <div class="bg-indigo-100 h-44 flex items-center justify-center p-4">
+                <img src="@item.Icon" alt="@item.Name" class="max-h-36 max-w-full object-contain" />
+            </div>
+            <div class="p-4">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <p class="font-bold text-indigo-900 text-lg">@item.Name</p>
+                        <p class="text-indigo-700 text-sm line-clamp-2 h-10">@item.Description</p>
+                    </div>
+                    <button @onclick:stopPropagation="true" @onclick="() => SelectItem(item)"
+                            class="bg-yellow-500 hover:bg-yellow-600 text-indigo-900 p-2 rounded-full flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </div>
+                <div class="mt-3">
+                    <span class="font-bold text-xl text-indigo-600">@item.Price.ToString("C")</span>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public MenuItem[] Items { get; set; } = Array.Empty<MenuItem>();
+
+    [Parameter]
+    public EventCallback<MenuItem> OnItemSelected { get; set; }
+
+    [Parameter]
+    public bool IsEditingMode { get; set; }
+
+    private string ActionIcon => IsEditingMode ? "edit_solid_24.png" : "shopping_bag.png";
+
+    private async Task SelectItem(MenuItem item)
+    {
+        await OnItemSelected.InvokeAsync(item);
+    }
+}

@@ -1,0 +1,56 @@
+@using MauiPOS.Models
+@using MauiPOS.Repositories
+@inject MenuItemsRepository MenuItemsRepo
+
+<div class="flex space-x-3 overflow-x-auto scrollbar-hide p-4">
+    @if (Categories == null || !Categories.Any())
+    {
+        <div class="flex items-center space-x-2 px-4 py-2 bg-indigo-200 rounded-lg animate-pulse">
+            <div class="h-5 w-5 bg-indigo-300 rounded-full"></div>
+            <div class="h-4 w-24 bg-indigo-300 rounded"></div>
+        </div>
+    }
+    else
+    {
+        @foreach (var category in Categories)
+        {
+            <div @onclick="() => SelectCategory(category)"
+                 class="@(category.IsSelected ? "bg-indigo-600 text-white" : "bg-indigo-200 text-indigo-900")
+                  flex items-center space-x-2 px-6 py-3 rounded-lg cursor-pointer transition-colors whitespace-nowrap">
+                <img src="@category.Icon" alt="@category.Name" class="h-5 w-5" />
+                <span class="font-medium">@category.Name</span>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter]
+    public MenuCategoryModel[] Categories { get; set; } = Array.Empty<MenuCategoryModel>();
+
+    [Parameter]
+    public EventCallback<MenuCategoryModel> OnCategorySelected { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!Categories.Any())
+        {
+            Categories = await MenuItemsRepo.GetMenuCategoriesAsync();
+            if (Categories.Any())
+            {
+                Categories[0].IsSelected = true; // Default selection
+                await OnCategorySelected.InvokeAsync(Categories[0]);
+            }
+            StateHasChanged();
+        }
+    }
+
+    private async Task SelectCategory(MenuCategoryModel category)
+    {
+        foreach (var cat in Categories)
+        {
+            cat.IsSelected = (cat.Id == category.Id);
+        }
+        await OnCategorySelected.InvokeAsync(category);
+    }
+}

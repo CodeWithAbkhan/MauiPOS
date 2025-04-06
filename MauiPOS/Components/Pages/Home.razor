@@ -1,0 +1,249 @@
+﻿@page "/"
+@using MauiPOS.Models
+@using MauiPOS.Repositories
+@inject HomeRepository HomeRepo
+@inject SettingsRepository SettingsRepo
+@inject IJSRuntime JSRuntime
+@using MauiPOS.Data
+
+   
+<div class="grid grid-cols-4 gap-2 h-screen bg-indigo-50">
+    <!-- Main Content Area (75%) -->
+    <div class="col-span-3 flex flex-col bg-white rounded-lg m-2">
+        <!-- Header with greeting and datetime -->
+        <div class="flex justify-between items-center p-4 gradient-bg text-white rounded-t-lg">
+            <div>
+                <h1 class="text-3xl font-bold">Welcome back, <span class="text-yellow-300">@Name</span>!</h1>
+                <p class="text-indigo-100">Ready to serve delicious food today</p>
+            </div>
+            <CurrentDateTime />
+        </div>
+
+        <!-- Categories Bar -->
+        <div class="bg-indigo-100">
+            <CategoriesList Categories="categories" OnCategorySelected="SelectCategory" />
+        </div>
+
+        <!-- Menu Items Grid -->
+        <div class="flex-1 overflow-y-auto p-2 bg-indigo-50">
+            <MenuItemsList Items="@menuItems" OnItemSelected="AddToCart" />
+        </div>
+
+        <!-- Loading Overlay -->
+        @if (isLoading)
+        {
+            <div class="absolute inset-0 bg-indigo-900 bg-opacity-50 flex items-center justify-center z-50">
+                <div class="flex flex-col items-center">
+                    <div class="animate-spin h-10 w-10 border-4 border-yellow-400 border-t-transparent rounded-full"></div>
+                    <p class="mt-4 text-white font-medium">Processing...</p>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Cart Area (25%) -->
+    <div class="col-span-1 bg-indigo-800 flex flex-col m-2 rounded-lg h-screen text-white">
+        <!-- Cart Header -->
+        <div class="gradient-bg rounded-t-lg p-4">
+            <h2 class="text-2xl font-bold text-center">Current Order</h2>
+            <p class="text-center text-indigo-100 text-sm">@cartItems.Count() items</p>
+        </div>
+
+        <!-- Cart Items -->
+        <div class="flex-1 overflow-y-auto p-3 space-y-3 bg-indigo-700">
+            @if (cartItems.Any())
+            {
+                @foreach (var item in cartItems)
+                {
+                    <div class="bg-indigo-600 p-3 rounded-lg scale-appear relative">
+                        <div class="grid grid-cols-[80px_1fr] gap-3">
+                            <div class="bg-indigo-500 rounded-lg flex items-center justify-center p-2">
+                                <img src="@item.Icon" alt="@item.Name" class="h-16 w-16 object-contain" />
+                            </div>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <p class="font-bold text-white">@item.Name</p>
+                                    <button @onclick="() => RemoveItemFromCart(item)" class="text-red-300 hover:bg-red-500 hover:text-white p-1 rounded-full">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+                                </div>
+                                <span class="font-bold text-yellow-300">@item.Price.ToString("C")</span>
+                                <div class="flex items-center justify-end mt-1">
+                                    <div class="flex items-center bg-indigo-800 rounded-full">
+                                        <button @onclick="() => DecreaseQuantity(item)" class="bg-indigo-900 hover:bg-indigo-950 p-1 rounded-full">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                        <span class="px-3 font-bold text-white">@item.Quantity</span>
+                                        <button @onclick="() => IncreaseQuantity(item)" class="bg-yellow-500 hover:bg-yellow-600 p-1 rounded-full">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-indigo-900" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="flex flex-col items-center justify-center   text-indigo-200">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    <p class="mt-4 font-medium">Your cart is empty</p>
+                    <p class="text-sm">Add items from the menu</p>
+                </div>
+            }
+        </div>
+
+        <!-- Order Summary -->
+        <div class="p-4 bg-indigo-900 rounded-b-lg">
+            <div class="space-y-3">
+                <div class="flex justify-between items-center">
+                    <span class="text-indigo-200">Subtotal</span>
+                    <span class="font-medium text-white">@Subtotal.ToString("C")</span>
+                </div>
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center space-x-2">
+                        <span class="text-indigo-200">Tax</span>
+                        <button @onclick="ChangeTaxPercentage" class="text-yellow-300 text-sm underline">@TaxPercentage%</button>
+                    </div>
+                    <span class="font-medium text-white">@TaxAmount.ToString("C")</span>
+                </div>
+                <div class="border-t border-dashed border-indigo-500 my-2"></div>
+                <div class="flex justify-between items-center">
+                    <span class="text-lg font-bold text-white">Total</span>
+                    <span class="text-lg font-bold text-yellow-300">@Total.ToString("C")</span>
+                </div>
+
+                <!-- Payment Buttons -->
+                <div class="grid grid-cols-2 gap-2 mt-4">
+                    <button @onclick="() => PlaceOrder(true)" class="bg-green-500 hover:bg-green-600 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                            <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd" />
+                        </svg>
+                        Cash
+                    </button>
+                    <button @onclick="() => PlaceOrder(false)" class="bg-blue-500 hover:bg-blue-600 text-white py-3 px-4 rounded-lg font-medium flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4z" />
+                            <path fill-rule="evenodd" d="M18 9H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clip-rule="evenodd" />
+                        </svg>
+                        Online
+                    </button>
+                </div>
+
+                <button @onclick="ClearCart" class="w-full bg-red-500 hover:bg-red-600 text-white py-2 rounded-lg font-medium mt-2 flex items-center justify-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                    </svg>
+                    Clear Cart
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@code {
+    private MenuCategoryModel[] categories = Array.Empty<MenuCategoryModel>();
+    private MenuItem[] menuItems = Array.Empty<MenuItem>();
+    private List<CartModel> cartItems = new();
+    private bool isLoading;
+    private string Name = "Guest";
+    private int TaxPercentage => HomeRepo.GetTaxPercentage();
+    private decimal Subtotal => cartItems.Sum(i => i.Amount);
+    private decimal TaxAmount => Subtotal * TaxPercentage / 100;
+    private decimal Total => Subtotal + TaxAmount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        Name = await SettingsRepo.GetOrSetNameAsync();
+        categories = await HomeRepo.GetMenuCategoriesAsync();
+        if (categories.Any())
+        {
+            categories[0].IsSelected = true;
+            menuItems = await HomeRepo.GetMenuItemsByCategoryIdAsync(categories[0].Id);
+        }
+        isLoading = false;
+    }
+
+    private async Task SelectCategory(MenuCategoryModel category)
+    {
+        isLoading = true;
+        foreach (var cat in categories) cat.IsSelected = cat.Id == category.Id;
+        menuItems = await HomeRepo.GetMenuItemsByCategoryIdAsync(category.Id);
+        isLoading = false;
+    }
+
+    private void AddToCart(MenuItem menuItem)  // Method expects a MenuItem parameter
+    {
+        var cartItem = cartItems.FirstOrDefault(c => c.ItemId == menuItem.Id);
+        if (cartItem == null)
+        {
+            cartItems.Add(new CartModel
+                {
+                    ItemId = menuItem.Id,
+                    Name = menuItem.Name,
+                    Price = menuItem.Price,
+                    Icon = menuItem.Icon,
+                    Quantity = 1
+                });
+        }
+        else
+        {
+            cartItem.Quantity++;
+        }
+        StateHasChanged();
+    }
+
+    private void IncreaseQuantity(CartModel item) => item.Quantity++;
+    private void DecreaseQuantity(CartModel item)
+    {
+        item.Quantity--;
+        if (item.Quantity <= 0) cartItems.Remove(item);
+        StateHasChanged();
+    }
+    private void RemoveItemFromCart(CartModel item) => cartItems.Remove(item);
+
+    private async Task ChangeTaxPercentage()
+    {
+        var result = await JSRuntime.InvokeAsync<string>("prompt", "Enter tax percentage", TaxPercentage.ToString());
+        if (int.TryParse(result, out int newTax) && newTax >= 0 && newTax <= 100)
+        {
+            HomeRepo.SetTaxPercentage(newTax);
+            StateHasChanged();
+        }
+    }
+
+    private async Task ClearCart()
+    {
+        if (cartItems.Any() && await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to clear the order?"))
+        {
+            cartItems.Clear();
+            StateHasChanged();
+        }
+    }
+
+    private async Task PlaceOrder(bool isPaidCash)
+    {
+        if (!cartItems.Any()) return;
+        if (await JSRuntime.InvokeAsync<bool>("confirm", "Are you sure you want to close the order?"))
+        {
+            isLoading = true;
+            if (await HomeRepo.PlaceOrderAsync(cartItems.ToArray(), isPaidCash))
+            {
+                cartItems.Clear();
+            }
+            isLoading = false;
+        }
+    }
+}

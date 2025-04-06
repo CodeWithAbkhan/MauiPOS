@@ -1,0 +1,60 @@
+@inject IJSRuntime JSRuntime 
+<div class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+    <div class="bg-wheat rounded-xl shadow-lg shadow-maroon/50 w-80">
+        <!-- Header -->
+        <div class="bg-maroon text-white flex justify-between items-center p-4 rounded-t-xl">
+            <span class="text-lg">Need help?</span>
+            <button @onclick="Close" class="bg-red-600 text-white font-bold w-6 h-6 rounded flex items-center justify-center">X</button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-4 space-y-4">
+            <img src="envelope.png" alt="Email" class="h-6 w-6 mx-auto" />
+            <p class="text-center text-black text-base">You can connect with me!</p>
+            <div class="flex items-center space-x-2">
+                <span class="text-black text-base">Email me at</span>
+                <a href="mailto:@Email?subject=@Subject" class="text-black font-bold underline">@Email</a>
+                <button @onclick="CopyEmail" title="Copy to clipboard">
+                    <img src="@(copied ? "check.png" : "copy.png")" alt="Copy" class="h-5 w-5" />
+                </button>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-maroon text-white p-2 flex items-center space-x-2 rounded-b-xl cursor-pointer" @onclick="OpenWebsite">
+            <span class="text-sm">Developed by:</span>
+            <span class="text-yellow-300 font-bold text-base underline">Jonatandb</span>
+        </div>
+    </div>
+</div>
+
+@code {
+    private const string Email = "jonatandb@gmail.com";
+    private const string Subject = "Restaurant POS";
+    private const string Website = "https://jonatandb.github.io/";
+    private bool copied = false;
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+
+    private async Task Close()
+    {
+        await OnClose.InvokeAsync();
+    }
+
+    private async Task CopyEmail()
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", Email);
+        copied = true;
+        StateHasChanged();
+        await Task.Delay(2000);
+        copied = false;
+        StateHasChanged();
+    }
+
+    private async Task OpenWebsite()
+    {
+        await JSRuntime.InvokeVoidAsync("window.open", Website, "_blank");
+    }
+     
+}

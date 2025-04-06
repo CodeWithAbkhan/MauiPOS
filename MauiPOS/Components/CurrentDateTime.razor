@@ -1,0 +1,24 @@
+@using MauiPOS.Extensions
+<div class="flex flex-col items-end">
+    <span class="text-lg font-medium text-yellow-300">@FormattedTime</span>
+    <span class="text-sm text-indigo-100">@FormattedDate</span>
+</div>
+
+@code {
+    private string FormattedTime => DateTime.Now.ToString("dddd, HH:mm:ss").FirstCharToUpper();
+    private string FormattedDate => DateTime.Now.ToString("dd MMMM yyyy").Substring(0, 3) + char.ToUpper(DateTime.Now.ToString("dd MMMM yyyy")[3]) + DateTime.Now.ToString("dd MMMM yyyy").Substring(4);
+
+    protected override async Task OnInitializedAsync()
+    {
+        _ = UpdateTimeAsync();
+    }
+
+    private async Task UpdateTimeAsync()
+    {
+        while (true)
+        {
+            StateHasChanged();
+            await Task.Delay(1000);
+        }
+    }
+}

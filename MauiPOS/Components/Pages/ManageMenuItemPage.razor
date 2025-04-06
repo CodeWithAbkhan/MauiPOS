@@ -1,0 +1,88 @@
+@page "/manage-items"
+@using MauiPOS.Models
+@using MauiPOS.Data
+@using MauiPOS.Repositories
+@inject MenuItemsRepository MenuItemsRepo
+
+<div class="grid grid-cols-4 gap-4 h-screen">
+    <!-- Left Section (75%) -->
+    <div class="col-span-3 p-4 space-y-4">
+        <h1 class="text-2xl font-bold">Manage Menu Items</h1>
+        <CategoriesList Categories="categories" OnCategorySelected="SelectCategory" />
+        <MenuItemsList Items="@menuItems" OnItemSelected="EditMenuItem" IsEditingMode="true" />
+        @if (isLoading)
+        {
+            <div class="absolute inset-0 bg-light-weat bg-opacity-50 flex items-center justify-center">
+                <div class="animate-spin h-6 w-6 border-4 border-maroon border-t-transparent rounded-full"></div>
+            </div>
+        }
+    </div>
+
+    <!-- Right Section (25%) -->
+    <div class="col-span-1 bg-light-weat p-2 space-y-2">
+        <div class="space-y-2">
+            <CurrentDateTime />
+            <h2 class="text-2xl font-bold text-center text-black">Save Menu Item</h2>
+        </div>
+        <div class="p-2 bg-light-weat flex-1 overflow-y-auto">
+            <SaveMenuItemForm ModelItem="@menuItem" OnCancel="Cancel" OnSaveItem="SaveMenuItem" />
+        </div>
+    </div>
+</div>
+
+@code {
+    private MenuCategoryModel[] categories = Array.Empty<MenuCategoryModel>();
+    private MenuItem[] menuItems = Array.Empty<MenuItem>();
+    private MenuItemModel menuItem = new();
+    private bool isLoading;
+
+    protected override async Task OnInitializedAsync()
+    {
+        isLoading = true;
+        categories = await MenuItemsRepo.GetMenuCategoriesAsync();
+        if (categories.Any())
+        {
+            categories[0].IsSelected = true;
+            menuItems = await MenuItemsRepo.GetMenuItemsByCategoryIdAsync(categories[0].Id);
+            ResetMenuItem();
+        }
+        isLoading = false;
+    }
+
+    private async Task SelectCategory(MenuCategoryModel category)
+    {
+        isLoading = true;
+        foreach (var cat in categories) cat.IsSelected = cat.Id == category.Id;
+        menuItems = await MenuItemsRepo.GetMenuItemsByCategoryIdAsync(category.Id);
+        isLoading = false;
+    }
+
+    private async Task EditMenuItem(MenuItem item)
+    {
+        menuItem = await MenuItemsRepo.GetMenuItemForEditAsync(item.Id);
+        StateHasChanged();
+    }
+
+    private void Cancel()
+    {
+        ResetMenuItem();
+    }
+
+    private async Task SaveMenuItem(MenuItemModel model)
+    {
+        isLoading = true;
+        var error = await MenuItemsRepo.SaveMenuItemAsync(model);
+        if (error == null)
+        {
+            menuItems = await MenuItemsRepo.GetMenuItemsByCategoryIdAsync(categories.First(c => c.IsSelected).Id);
+            ResetMenuItem();
+        }
+        isLoading = false;
+    }
+
+    private void ResetMenuItem()
+    {
+        menuItem = MenuItemsRepo.CreateNewMenuItemModel(categories);
+        StateHasChanged();
+    }
+}
